@@ -80,45 +80,33 @@ export function DailyCalendarView({
                     <button
                       key={event.id}
                       onClick={() => onEventClick(event)}
-                      className={clsx(
-                        "w-full p-2 rounded-lg text-left transition-all duration-200 cursor-pointer hover:shadow-md text-sm",
-                        event.type === "medicine"
-                          ? "bg-primary/10 border border-primary/30 hover:bg-primary/15"
-                          : "bg-accent/10 border border-accent/30 hover:bg-accent/15",
-                      )}
+                      className="w-full p-2 rounded-lg text-left transition-all duration-200 cursor-pointer hover:shadow-md text-sm bg-primary/10 border border-primary/30 hover:bg-primary/15"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-xs text-foreground">{event.title}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{event.time}</p>
-                          {event.type === "medicine" && (
-                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                              <span
-                                className={clsx(
-                                  "text-xs px-1.5 py-0.5 rounded font-medium",
-                                  event.status === "success"
-                                    ? "bg-green-100 text-green-700"
-                                    : event.status === "failed"
-                                      ? "bg-red-100 text-red-700"
-                                      : "bg-yellow-100 text-yellow-700",
-                                )}
-                              >
-                                {event.status === "success"
-                                  ? "✓ Tomado"
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <span
+                              className={clsx(
+                                "text-xs px-1.5 py-0.5 rounded font-medium",
+                                event.status === "success"
+                                  ? "bg-green-100 text-green-700"
                                   : event.status === "failed"
-                                    ? "✗ No respondió"
-                                    : "⏳ Pendiente"}
-                              </span>
-                            </div>
-                          )}
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-yellow-100 text-yellow-700",
+                              )}
+                            >
+                              {event.status === "success"
+                                ? "✓ Tomado"
+                                : event.status === "failed"
+                                  ? "✗ No respondió"
+                                  : "⏳ Pendiente"}
+                            </span>
+                          </div>
                         </div>
-                        <div
-                          className={clsx(
-                            "w-6 h-6 rounded flex items-center justify-center flex-shrink-0 text-sm",
-                            event.type === "medicine" ? "bg-primary/20" : "bg-accent/20",
-                          )}
-                        >
-                          {event.type === "medicine" ? "💊" : "🏥"}
+                        <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 text-sm bg-primary/20">
+                          💊
                         </div>
                       </div>
                     </button>

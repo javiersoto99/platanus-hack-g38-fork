@@ -16,7 +16,6 @@ export function Sidebar({ activeView, onViewChange, onPatientClick }: SidebarPro
   const menuItems = [
     { id: "calendar", label: "Calendario", icon: Calendar },
     { id: "reminders", label: "Recordatorios", icon: Pill },
-    { id: "appointments", label: "Citas Médicas", icon: Stethoscope },
   ] as const
 
   return (
@@ -53,7 +52,7 @@ export function Sidebar({ activeView, onViewChange, onPatientClick }: SidebarPro
           {menuItems.map(({ id, label, icon: Icon }) => (
             <li key={id}>
               <button
-                onClick={() => onViewChange(id as "calendar" | "reminders" | "appointments")}
+                onClick={() => onViewChange(id as "calendar" | "reminders")}
                 className={clsx(
                   "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 relative",
                   activeView === id ? "bg-primary text-primary-foreground shadow-md" : "text-foreground hover:bg-muted",

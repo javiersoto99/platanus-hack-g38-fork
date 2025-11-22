@@ -31,7 +31,6 @@ export default function Home() {
           <>
             {activeView === "calendar" && <CalendarView />}
             {activeView === "reminders" && <RemindersView />}
-            {activeView === "appointments" && <AppointmentsView />}
           </>
         )}
       </main>

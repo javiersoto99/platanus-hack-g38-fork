@@ -48,10 +48,12 @@ export function MonthlyCalendarView({
 
   const getDaySummary = (day: number) => {
     const events = getEventsForDay(day)
+    const medicineEvents = events.filter((e) => e.type === "medicine")
     return {
-      total: events.length,
-      medicines: events.filter((e) => e.type === "medicine").length,
-      appointments: events.filter((e) => e.type === "appointment").length,
+      total: medicineEvents.length,
+      completed: medicineEvents.filter((e) => e.status === "success").length,
+      pending: medicineEvents.filter((e) => e.status === "pending").length,
+      rejected: medicineEvents.filter((e) => e.status === "failed").length,
     }
   }
 
@@ -96,13 +98,13 @@ export function MonthlyCalendarView({
               {days.map((day) => {
                 const dayEvents = getEventsForDay(day)
                 const daySummary = getDaySummary(day)
-                const isHovered = hoveredDate === day
+                const isHovered = hoveredDate === day && daySummary.total > 0
 
                 return (
                   <div key={day} className="relative">
                     <button
                       onClick={() => onDayClick(day)}
-                      onMouseEnter={() => setHoveredDate(day)}
+                      onMouseEnter={() => daySummary.total > 0 && setHoveredDate(day)}
                       onMouseLeave={() => setHoveredDate(null)}
                       className={clsx(
                         "w-full aspect-square rounded-lg p-2 flex flex-col items-start justify-start transition-all duration-200 relative group",
@@ -136,12 +138,16 @@ export function MonthlyCalendarView({
                           </p>
                           <div className="space-y-1">
                             <p className="text-sm">
-                              <span className="font-bold text-primary">{daySummary.medicines}</span>
-                              <span className="text-muted-foreground"> medicinas</span>
+                              <span className="font-bold text-green-600">{daySummary.completed}</span>
+                              <span className="text-muted-foreground"> completados</span>
                             </p>
                             <p className="text-sm">
-                              <span className="font-bold text-blue-600">{daySummary.appointments}</span>
-                              <span className="text-muted-foreground"> citas</span>
+                              <span className="font-bold text-yellow-600">{daySummary.pending}</span>
+                              <span className="text-muted-foreground"> pendientes</span>
+                            </p>
+                            <p className="text-sm">
+                              <span className="font-bold text-red-600">{daySummary.rejected}</span>
+                              <span className="text-muted-foreground"> rechazados</span>
                             </p>
                           </div>
                         </Card>

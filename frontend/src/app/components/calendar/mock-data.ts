@@ -28,14 +28,6 @@ export const mockEvents: CalendarEvent[] = [
     duration: 15,
   },
   {
-    id: "3",
-    date: 8,
-    title: "Cita con Dr. García",
-    time: "10:30",
-    type: "appointment",
-    description: "Revisión cardiólogo - Consultorio 2B",
-  },
-  {
     id: "4",
     date: 12,
     title: "Atorvastatina",
@@ -47,14 +39,6 @@ export const mockEvents: CalendarEvent[] = [
     maxRetries: 2,
     contactMethod: "whatsapp",
     duration: 15,
-  },
-  {
-    id: "5",
-    date: 15,
-    title: "Laboratorio",
-    time: "09:00",
-    type: "appointment",
-    description: "Análisis de sangre - Clinica San Pedro",
   },
   {
     id: "6",
