@@ -14,7 +14,7 @@ from enums import ReminderInstanceStatus
 import logging
 import httpx
 import os
-from models import ReminderInstance
+from models import ReminderInstance, Reminder, Medicine
 
 logger = logging.getLogger(__name__)
 
@@ -249,7 +249,6 @@ async def whatsapp_webhook(
                 "message": "No se pudo obtener message_id del mensaje"
             }
         
-        from models import ReminderInstance
         reminder_instance = db.query(ReminderInstance).filter(
             ReminderInstance.message_id == message_id
         ).first()
@@ -301,6 +300,26 @@ async def whatsapp_webhook(
             taken_at=datetime.now() if is_positive_response else None
         )
         ReminderInstanceService.update(db, reminder_instance_id, instance_update)
+        
+        # Si la respuesta fue positiva, restar 1 al total de tablets_left de la medicina
+        if is_positive_response:
+            # Obtener el reminder del reminder_instance
+            reminder = db.query(Reminder).filter(Reminder.id == reminder_instance.reminder_id).first()
+            
+            if reminder and reminder.medicine:
+                medicine = db.query(Medicine).filter(Medicine.id == reminder.medicine).first()
+                
+                if medicine and medicine.tablets_left is not None and medicine.tablets_left > 0:
+                    # Restar 1 al total de tablets_left
+                    medicine.tablets_left = medicine.tablets_left - 1
+                    db.flush()
+                    print(f"Medicina {medicine.id} ({medicine.name}): tablets_left actualizado de {medicine.tablets_left + 1} a {medicine.tablets_left}")
+                elif medicine:
+                    print(f"Medicina {medicine.id} ({medicine.name}): tablets_left es {medicine.tablets_left}, no se puede restar")
+            elif reminder:
+                print(f"Reminder {reminder.id} no tiene medicine asociada")
+            else:
+                print(f"No se encontró reminder con id {reminder_instance.reminder_id}")
         
         logger.info(f"NotificationLog {notification_log.id} creado con status {log_status}. Reminder instance {reminder_instance_id} actualizado a {instance_status}. Respuesta: {user_response}")
         
