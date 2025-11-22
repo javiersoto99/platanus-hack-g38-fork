@@ -13,7 +13,6 @@ import {
   Trash2,
   Power,
   Edit,
-  Eye,
   Calendar,
 } from "lucide-react"
 import { Reminder, ReminderExecution } from "./types"
@@ -61,33 +60,15 @@ export function MedicineDetailModal({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0 !grid-rows-[auto_1fr_auto] overflow-hidden">
         {/* Fixed Header */}
-        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-border bg-background row-start-1">
+        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-border bg-background">
             <DialogTitle className="flex items-center justify-between">
               <span>{isEditMode ? "Editar" : "Detalles"} - {reminder.medicine?.name}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsEditMode(!isEditMode)}
-                className="ml-2"
-              >
-                {isEditMode ? (
-                  <>
-                    <Eye className="w-4 h-4 mr-2" />
-                    Ver
-                  </>
-                ) : (
-                  <>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Editar
-                  </>
-                )}
-              </Button>
             </DialogTitle>
           </DialogHeader>
 
         {/* Scrollable Content */}
-        <div className="overflow-y-auto min-h-0 px-6 py-4 row-start-2">
-          <div className="space-y-6">
+        <div className="overflow-y-auto min-h-0 flex justify-center px-6 py-4">
+          <div className="space-y-6 w-full">
             <div className="flex items-center gap-6">
               <div className="relative">
                 <div className="w-32 h-44 bg-gradient-to-b from-cream/30 to-cream/50 rounded-2xl border-3 border-primary flex items-end justify-center overflow-hidden shadow-lg">
@@ -297,7 +278,7 @@ export function MedicineDetailModal({
               </div>
             </div>
 
-            {recentExecutions.length > 0 && (
+            {recentExecutions.length > 0 && !isEditMode && (
               <div className="pt-4 border-t border-border">
                 <h3 className="font-semibold text-foreground mb-4">Últimas 5 Ejecuciones</h3>
                 <div className="space-y-3">
@@ -340,15 +321,9 @@ export function MedicineDetailModal({
 
         {/* Fixed Footer */}
         <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border-border bg-background row-start-3">
-            <div className="flex items-center justify-between w-full gap-3">
+            <div className="flex items-center justify-center w-full gap-3">
             {isEditMode ? (
               <>
-                <div className="flex gap-2">
-                  <Button variant="destructive" onClick={onDelete}>
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Eliminar
-                  </Button>
-                </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setIsEditMode(false)}>
                     Cancelar
@@ -361,22 +336,17 @@ export function MedicineDetailModal({
             ) : (
               <>
                 <div className="flex gap-2">
-                  <Button variant="destructive" onClick={onDelete}>
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Eliminar
+                <Button className="bg-primary hover:bg-primary/90" onClick={() => setIsEditMode(true)}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar
                   </Button>
                   <Button variant="outline" onClick={() => onToggleActive(reminder)}>
                     <Power className="w-4 h-4 mr-2" />
                     {reminder.is_active ? "Desactivar" : "Activar"}
                   </Button>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleClose}>
-                    Cerrar
-                  </Button>
-                  <Button className="bg-primary hover:bg-primary/90" onClick={() => setIsEditMode(true)}>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Editar
+                  <Button variant="destructive" onClick={onDelete}>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Eliminar
                   </Button>
                 </div>
               </>
