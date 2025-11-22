@@ -13,7 +13,10 @@ async def send_whatsapp_message(
     if not api_key:
         raise ValueError("KAPSO_API_KEY no está configurada")
     
-    phone_id = phone_number_id or os.getenv('KAPSO_PHONE_NUMBER_ID', '597907523413541')
+    phone_id = phone_number_id or os.getenv('KAPSO_PHONE_NUMBER_ID')
+    if not phone_id:
+        raise ValueError("KAPSO_PHONE_NUMBER_ID no está configurada")
+    
     base_url = 'https://api.kapso.ai/meta/whatsapp'
     url = f"{base_url}/v21.0/{phone_id}/messages"
     

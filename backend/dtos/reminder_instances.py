@@ -5,7 +5,7 @@ from enums import ReminderInstanceStatus
 
 
 class ReminderInstanceCreate(BaseModel):
-    id: int  # ID único de la instancia (auto-increment)
+    # id: Optional[int] = None  # ID único de la instancia (auto-increment, opcional)
     reminder_id: int  # Foreign Key a reminders.id
     scheduled_datetime: datetime
     status: Optional[str] = ReminderInstanceStatus.PENDING.value
