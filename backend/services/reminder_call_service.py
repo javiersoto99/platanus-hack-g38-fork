@@ -234,7 +234,7 @@ class ReminderCallService:
             
             # Enviar llamada
             try:
-                call_sid = create_call(phone_number, message, webhook_url=webhook_url)
+                call_sid = create_call(phone_number, message, webhook_url=webhook_url, reminder_instance_id=reminder_instance.id)
                 
                 result["call_sid"] = call_sid
                 

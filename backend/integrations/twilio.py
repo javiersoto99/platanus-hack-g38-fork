@@ -7,7 +7,8 @@ def create_call(
     to: str,
     message: str,
     from_number: Optional[str] = None,
-    webhook_url: Optional[str] = None
+    webhook_url: Optional[str] = None,
+    reminder_instance_id: Optional[int] = None
 ) -> str:
     """
     Crea una llamada telefónica usando Twilio
@@ -21,6 +22,7 @@ def create_call(
     Returns:
         call_sid: ID de la llamada creada
     """
+    print('reminder_instance_id en create_call', reminder_instance_id)
     account_sid = os.getenv('TWILIO_ACCOUNT_SID')
     auth_token = os.getenv('TWILIO_AUTH_TOKEN')
     
@@ -38,9 +40,10 @@ def create_call(
               <Say voice="alice" language="es-ES">{message}</Say>"""
     
     # Si hay webhook_url, agregar Gather para recibir respuesta
+    print('webhook_url en create_call', webhook_url)
     if webhook_url:
         twiml += f"""
-              <Gather input="speech" language="es-ES" action="{webhook_url}">
+              <Gather input="speech" language="es-ES" action="{f'webhook_url?reminder_instance_id={reminder_instance_id}'}">
                 <Say voice="alice" language="es-ES">
                   Si ya lo hiciste, di "sí".
                 </Say>
