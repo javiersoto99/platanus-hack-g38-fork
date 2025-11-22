@@ -1,14 +1,20 @@
 "use client"
 
+import { useState } from "react"
 import { Card } from "@/components/ui/card"
-import { MessageCircle, Phone, Pill, RotateCcw } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { MessageCircle, Phone, Pill, RotateCcw, History, Check } from "lucide-react"
 import { ReminderInstance } from "./types"
+import ReminderLogModal from "./reminder-log-modal"
 
 interface TimelineItemProps {
   instance: ReminderInstance
+  onRectify?: (id: number) => void
 }
 
-export function TimelineItem({ instance }: TimelineItemProps) {
+export function TimelineItem({ instance, onRectify }: TimelineItemProps) {
+  const [showLog, setShowLog] = useState(false)
+
   return (
     <div className="relative flex gap-6">
       {/* Timeline dot */}
@@ -68,7 +74,7 @@ export function TimelineItem({ instance }: TimelineItemProps) {
 
             {instance.taken_at && (
               <p className="text-xs text-muted-foreground mt-2">
-                Confirmado:{" "}
+                Confirmado: {" "}
                 {new Date(instance.taken_at).toLocaleTimeString("es-ES", {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -77,9 +83,24 @@ export function TimelineItem({ instance }: TimelineItemProps) {
             )}
           </div>
 
-          <Pill className="w-8 h-8 text-primary" />
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2">
+              {instance.status === "failed" && onRectify && (
+                <Button size="sm" variant="outline" onClick={() => onRectify(instance.id)}>
+                  <Check className="w-4 h-4 mr-2" />
+                  Rectificar
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" onClick={() => setShowLog(true)} aria-label="Ver historial">
+                <History className="w-5 h-5" />
+              </Button>
+            </div>
+            <Pill className="w-8 h-8 text-primary" />
+          </div>
         </div>
       </Card>
+
+      <ReminderLogModal isOpen={showLog} onClose={() => setShowLog(false)} instance={instance} />
     </div>
   )
 }
