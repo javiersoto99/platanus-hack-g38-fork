@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
-from models import Reminder, ReminderInstance, Appointment, Medicine, ElderlyProfile, NotificationLog
+from models import Reminder, ReminderInstance, Appointment, Medicine, ElderlyProfile, NotificationLog, User
 from services.reminder_instances import ReminderInstanceService
 from services.notification_logs import NotificationLogService
 from dtos.reminder_instances import ReminderInstanceCreate, ReminderInstanceUpdate
@@ -301,7 +301,7 @@ Solo devuelve el mensaje, sin comillas ni formato adicional."""
             db.flush()
             
             # Crear notification_log en la misma transacción
-            message, buttons = ReminderSchedulerService.create_whatsapp_message(reminder)
+            message, buttons = ReminderSchedulerService.create_whatsapp_message(db, reminder)
             notification_log = NotificationLog(
                 reminder_instance_id=reminder_instance.id,
                 notification_type="whatsapp",
