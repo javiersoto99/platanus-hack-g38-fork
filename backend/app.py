@@ -51,7 +51,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     # Obtener intervalo del .env o usar 60 segundos por defecto
-    interval_seconds = int(os.getenv('REMINDER_CRON_INTERVAL_SECONDS', '20'))
+    interval_seconds = int(os.getenv('REMINDER_CRON_INTERVAL_SECONDS', '60'))
     init_scheduler(interval_seconds=interval_seconds)
     print(f"✅ Scheduler de recordatorios iniciado (intervalo: {interval_seconds} segundos)")
 
