@@ -5,7 +5,7 @@ from typing import List, Dict
 from integrations.twilio import create_call
 from integrations.gemini import generate_content
 from integrations.kapso import send_whatsapp_message
-from routers import appointments, elderly_profiles, health_workers
+from routers import appointments, elderly_profiles, health_workers, users, medicines, notification_logs, reminders, reminder_instances, family_elderly_relationship
 from database import Base, engine
 # from routers import auth
 # from config import settings
@@ -15,7 +15,7 @@ load_dotenv()
 app = FastAPI()
 
 # Importar todos los modelos para que estén registrados en Base.metadata
-from models import Appointment, ElderlyProfile, HealthWorker, User
+from models import Appointment, ElderlyProfile, HealthWorker, User, Medicine, NotificationLog, ReminderInstance, Reminder, FamilyElderlyRelationship
 
 # Crear las tablas si no existen (solo en desarrollo, comentar en producción)
 # Base.metadata.create_all(bind=engine)
@@ -70,3 +70,9 @@ async def send_whatsapp(request: WhatsAppRequest):
 app.include_router(appointments.router)
 app.include_router(elderly_profiles.router)
 app.include_router(health_workers.router)
+app.include_router(users.router)
+app.include_router(medicines.router)
+app.include_router(notification_logs.router)
+app.include_router(reminders.router)
+app.include_router(reminder_instances.router)
+app.include_router(family_elderly_relationship.router)
