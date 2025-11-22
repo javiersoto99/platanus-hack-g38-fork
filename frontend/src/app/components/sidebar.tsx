@@ -7,9 +7,10 @@ import clsx from "clsx"
 interface SidebarProps {
   activeView: "calendar" | "reminders" | "appointments"
   onViewChange: (view: "calendar" | "reminders" | "appointments") => void
+  onPatientClick?: () => void
 }
 
-export function Sidebar({ activeView, onViewChange }: SidebarProps) {
+export function Sidebar({ activeView, onViewChange, onPatientClick }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const menuItems = [
@@ -70,11 +71,14 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
       {/* Elderly Info Card */}
       {!isCollapsed && (
         <div className="p-4 border-t border-border bg-muted/30">
-          <div className="bg-primary/10 rounded-lg p-3 text-center">
+          <button
+            onClick={onPatientClick}
+            className="w-full bg-primary/10 rounded-lg p-3 text-center hover:bg-primary/20 transition-colors cursor-pointer"
+          >
             <p className="text-xs text-muted-foreground mb-1">Cuidando a:</p>
             <p className="font-semibold text-foreground">Abuelo Juan</p>
             <p className="text-xs text-muted-foreground mt-1">87 años</p>
-          </div>
+          </button>
         </div>
       )}
     </aside>

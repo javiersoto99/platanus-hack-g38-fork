@@ -20,7 +20,7 @@ class NotificationLogService:
     @staticmethod
     def get_by_reminder_instance_id(db: Session, reminder_instance_id: int) -> List[NotificationLog]:
         """Obtener todos los logs de notificaciones de una instancia de recordatorio"""
-        return db.query(NotificationLog).filter(NotificationLog.id == reminder_instance_id).all()
+        return db.query(NotificationLog).filter(NotificationLog.reminder_instance_id == reminder_instance_id).all()
 
     @staticmethod
     def get_by_status(db: Session, status: str) -> List[NotificationLog]:
@@ -31,20 +31,9 @@ class NotificationLogService:
     def create(db: Session, log_data: NotificationLogCreate) -> NotificationLog:
         """Crear un nuevo log de notificación"""
         data = log_data.model_dump()
-        log_id = data.pop('id')
         
-        # Construir la query con OVERRIDING SYSTEM VALUE
-        columns = ', '.join([f'"{k}"' for k in data.keys() if data[k] is not None])
-        values = ', '.join([f':{k}' for k in data.keys() if data[k] is not None])
-        params = {k: v for k, v in data.items() if v is not None}
-        params['id'] = log_id
-        
-        query = f"""
-            INSERT INTO notification_logs (id, {columns}) 
-            OVERRIDING SYSTEM VALUE 
-            VALUES (:id, {values})
-            RETURNING *
-        """
+        # Crear el objeto directamente con SQLAlchemy
+        log = NotificationLog(**data)
         
         try:
             result = db.execute(text(query), params)

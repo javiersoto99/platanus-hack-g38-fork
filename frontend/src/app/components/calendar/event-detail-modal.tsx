@@ -17,10 +17,10 @@ export function EventDetailModal({ event, onClose }: EventDetailModalProps) {
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50 animate-in fade-in duration-200 z-40" onClick={onClose} />
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
-        <Card className="bg-card border-border w-full max-w-md max-h-[80vh] flex flex-col">
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4 animate-in fade-in zoom-in duration-300">
+        <Card className="bg-card border-border w-full max-w-md max-h-[80vh] flex flex-col gap-1">
           {/* Fixed Header with 6px horizontal and 2px vertical padding */}
-          <div className="px-[6px] py-[2px] border-b border-border flex items-start justify-between sticky top-0 bg-card rounded-t-lg z-10">
+          <div className="px-4 py-2 border-b border-border flex items-start justify-between sticky top-0 bg-card rounded-t-lg z-10">
             <div className="flex items-center gap-3">
               <div
                 className={clsx(
@@ -45,7 +45,7 @@ export function EventDetailModal({ event, onClose }: EventDetailModalProps) {
           </div>
 
           {/* Scrollable Content */}
-          <div className="p-6 flex-1 overflow-y-auto space-y-4">
+          <div className="px-6 py-4 flex-1 overflow-y-auto space-y-4">
             <div>
               <h4 className="text-lg font-bold text-foreground">{event.title}</h4>
             </div>
@@ -116,7 +116,7 @@ export function EventDetailModal({ event, onClose }: EventDetailModalProps) {
           </div>
 
           {/* Fixed Footer with 6px horizontal and 2px vertical padding */}
-          <div className="px-[6px] py-[2px] border-t border-border space-y-2 flex-shrink-0 bg-card rounded-b-lg sticky bottom-0 z-10">
+          <div className="px-4 py-2 border-t border-border space-y-2 flex-shrink-0 bg-card rounded-b-lg sticky bottom-0 z-10">
             <Button className="w-full bg-primary hover:bg-primary/90">
               {event.type === "medicine" ? "Marcar como tomado" : "Ver más detalles"}
             </Button>

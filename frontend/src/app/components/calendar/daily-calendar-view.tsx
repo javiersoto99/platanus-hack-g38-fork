@@ -45,7 +45,7 @@ export function DailyCalendarView({
 
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden">
-      <div className="p-6 border-b border-border flex items-center justify-between">
+      <div className="p-6 flex items-center justify-between">
         <div>
           <button
             onClick={onBackToMonth}

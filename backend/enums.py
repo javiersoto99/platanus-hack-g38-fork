@@ -6,4 +6,4 @@ class ReminderInstanceStatus(str, Enum):
     WAITING = "waiting"
     FAILURE = "failure"
     SUCCESS = "success"
-
+    REJECTED = "rejected"
