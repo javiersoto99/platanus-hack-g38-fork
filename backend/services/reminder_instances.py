@@ -56,12 +56,20 @@ class ReminderInstanceService:
             db.commit()
             # Obtener la instancia creada
             instance = db.query(ReminderInstance).filter(ReminderInstance.id == instance_id).first()
+            if not instance:
+                raise ValueError(f"Error: No se pudo crear la reminder_instance con ID {instance_id}. La instancia no se encontró después de la inserción.")
             return instance
         except IntegrityError as e:
             db.rollback()
             error_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
             if 'foreign key' in error_msg.lower() or 'violates foreign key constraint' in error_msg.lower():
-                raise ValueError(f"Error: El ID {instance_data.id} no existe en la tabla reminders")
+                # Verificar si es un problema con reminder_id
+                if 'reminder_id' in error_msg.lower() or 'reminders.id' in error_msg.lower() or f'reminders' in error_msg.lower():
+                    raise ValueError(f"Error: El reminder_id {instance_data.reminder_id} no existe en la tabla reminders")
+                # Otro tipo de foreign key constraint
+                raise ValueError(f"Error de integridad referencial al crear la instancia: {error_msg}")
+            elif 'duplicate' in error_msg.lower() or 'unique' in error_msg.lower() or 'primary key' in error_msg.lower():
+                raise ValueError(f"Error: El ID {instance_data.id} ya existe en la tabla reminder_instances")
             raise ValueError(f"Error al crear la instancia de recordatorio: {error_msg}")
         except Exception as e:
             db.rollback()
