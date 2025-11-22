@@ -52,6 +52,7 @@ def create_call(
     twiml += """
            </Response>"""
     
+    print('twiml en create_call', twiml)
     call = client.calls.create(
         from_=from_number,
         to=to,
