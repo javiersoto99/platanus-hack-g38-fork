@@ -5,6 +5,7 @@ from typing import List, Dict
 from integrations.twilio import create_call
 from integrations.gemini import generate_content
 from integrations.kapso import send_whatsapp_message
+from integrations.telegram import send_telegram_message
 from routers import appointments, elderly_profiles, health_workers, users, medicines, notification_logs, reminders, reminder_instances, family_elderly_relationship
 from database import Base, engine
 # from routers import auth
@@ -56,11 +57,15 @@ async def generate_gemini_content(request: GeminiRequest):
 async def send_whatsapp(request: WhatsAppRequest):
     """Endpoint para enviar un mensaje de WhatsApp con botones interactivos"""
     try:
-        response = await send_whatsapp_message(
+        # response = await send_whatsapp_message(
+        #     to=request.to,
+        #     body_text=request.body_text,
+        #     buttons=request.buttons,
+        #     phone_number_id=request.phone_number_id
+        # )
+        response = await send_telegram_message(
             to=request.to,
-            body_text=request.body_text,
-            buttons=request.buttons,
-            phone_number_id=request.phone_number_id
+            text=request.body_text
         )
         return {"status": "success", "data": response}
     except Exception as e:

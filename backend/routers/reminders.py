@@ -12,6 +12,7 @@ from dtos.reminder_instances import ReminderInstanceUpdate
 from dtos.notification_logs import NotificationLogUpdate
 from enums import ReminderInstanceStatus
 import logging
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -293,8 +294,18 @@ async def whatsapp_webhook(
 async def telegram_webhook(request: Request, db: Session = Depends(get_db)):
     body = await request.json()
     logger.info(f"Webhook recibido: {body}")
-    
-    return {
-        "status": "success",
-        "message": "Webhook procesado correctamente"
-    }
+
+    # Detectar callback_query
+    if "callback_query" in body:
+        callback_id = body["callback_query"]["id"]
+        chat_id = body["callback_query"]["from"]["id"]
+        data = body["callback_query"]["data"]
+
+        # 1. Liberar el botón (OBLIGATORIO)
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/answerCallbackQuery",
+                json={"callback_query_id": callback_id}
+            )
+
+    return {"status": "ok"}
