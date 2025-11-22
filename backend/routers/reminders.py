@@ -14,6 +14,7 @@ from enums import ReminderInstanceStatus
 import logging
 import httpx
 import os
+from models import ReminderInstance
 
 logger = logging.getLogger(__name__)
 
@@ -238,41 +239,70 @@ async def whatsapp_webhook(
                 "message": "No se pudo obtener el número de teléfono del webhook"
             }
         
-        # Buscar notification_log por phone_number y status "sent" o "waiting"
-        # Buscamos el más reciente que esté esperando respuesta
-        from models import NotificationLog
-        notification_log = db.query(NotificationLog).filter(
-            NotificationLog.recepient_phone == phone_number,
-            NotificationLog.status.in_(["sent", "waiting"])
-        ).order_by(NotificationLog.sent_at.desc()).first()
+        # Buscar reminder_instance por message_id del mensaje original
+        message_id = body.get("message", {}).get("context", {}).get("id", None)
         
-        if not notification_log:
-            logger.warning(f"No se encontró notification_log para phone_number {phone_number}")
+        if not message_id:
+            logger.warning("No se pudo obtener message_id del webhook")
             return {
                 "status": "error",
-                "message": f"No se encontró notification_log para el número {phone_number}"
+                "message": "No se pudo obtener message_id del mensaje"
             }
         
-        reminder_instance_id = notification_log.id
+        from models import ReminderInstance
+        reminder_instance = db.query(ReminderInstance).filter(
+            ReminderInstance.message_id == message_id
+        ).first()
         
-        # Actualizar notification_log con la respuesta
-        log_update = NotificationLogUpdate(
-            response=user_response or "Respuesta recibida",
-            delivered_at=datetime.now(),
-            status="delivered"
+        if not reminder_instance:
+            logger.warning(f"No se encontró reminder_instance para message_id {message_id}")
+            return {
+                "status": "error",
+                "message": f"No se encontró reminder_instance para el message_id {message_id}"
+            }
+        
+        reminder_instance_id = reminder_instance.id
+        
+        # Determinar el estado según la respuesta del botón
+        # "taken" o "btn_yes" o "Si" = respuesta positiva
+        # "skip" o "btn_no" o "No" = respuesta negativa
+        is_positive_response = (
+            button_id in ["taken", "btn_yes"] or 
+            button_title and button_title.lower() in ["sí", "si", "yes", "ya lo tomé"]
         )
-        NotificationLogService.update(db, reminder_instance_id, log_update)
+        print('is_positive_response', is_positive_response)
         
-        # Actualizar reminder_instance status a "success"
-        reminder_instance = ReminderInstanceService.get_by_id(db, reminder_instance_id)
-        if reminder_instance:
-            instance_update = ReminderInstanceUpdate(
-                status=ReminderInstanceStatus.SUCCESS.value
-            )
-            ReminderInstanceService.update(db, reminder_instance_id, instance_update)
-            logger.info(f"Reminder instance {reminder_instance_id} actualizado a success. Respuesta: {user_response}")
-        else:
-            logger.warning(f"No se encontró reminder_instance con id {reminder_instance_id}")
+        # Status del notification_log: "sent" si fue sí, "rejected" si fue no
+        log_status = "sent" if is_positive_response else "rejected"
+        print('log_status', log_status)
+        
+        # Status del reminder_instance
+        instance_status = ReminderInstanceStatus.SUCCESS.value if is_positive_response else ReminderInstanceStatus.REJECTED.value
+        print('instance_status', instance_status)
+
+        # Crear nuevo notification_log con la respuesta
+        from models import NotificationLog
+        notification_log = NotificationLog(
+            reminder_instance_id=reminder_instance_id,
+            notification_type="whatsapp",
+            recepient_phone=phone_number,
+            status=log_status,
+            sent_at=datetime.now(),
+            delivered_at=datetime.now(),
+            response=user_response or f"Respuesta recibida: {button_id or button_title}"
+        )
+        db.add(notification_log)
+        db.flush()
+        db.refresh(notification_log)
+        
+        # Actualizar reminder_instance status
+        instance_update = ReminderInstanceUpdate(
+            status=instance_status,
+            taken_at=datetime.now() if is_positive_response else None
+        )
+        ReminderInstanceService.update(db, reminder_instance_id, instance_update)
+        
+        logger.info(f"NotificationLog {notification_log.id} creado con status {log_status}. Reminder instance {reminder_instance_id} actualizado a {instance_status}. Respuesta: {user_response}")
         
         return {
             "status": "success",
@@ -293,20 +323,137 @@ async def whatsapp_webhook(
 
 @router.post("/webhook/telegram")
 async def telegram_webhook(request: Request, db: Session = Depends(get_db)):
-    body = await request.json()
-    logger.info(f"Webhook recibido: {body}")
-    bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
-    # Detectar callback_query
-    if "callback_query" in body:
-        callback_id = body["callback_query"]["id"]
-        chat_id = body["callback_query"]["from"]["id"]
-        data = body["callback_query"]["data"]
-
-        # 1. Liberar el botón (OBLIGATORIO)
+    """
+    Webhook para recibir respuestas de Telegram.
+    Actualiza el reminder_instance y notification_log con la respuesta del usuario.
+    
+    Payload esperado de Telegram:
+    {
+        "update_id": 123,
+        "callback_query": {
+            "id": "callback_id",
+            "from": {"id": 640905539, ...},
+            "message": {...},
+            "data": "taken" o "skip"
+        }
+    }
+    """
+    try:
+        body = await request.json()
+        logger.info(f"Webhook de Telegram recibido: {body}")
+        
+        bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+        
+        if "callback_query" not in body:
+            logger.info("No hay callback_query en el webhook, ignorando")
+            return {"status": "ok", "message": "No es un callback_query"}
+        
+        callback_query = body["callback_query"]
+        callback_id = callback_query["id"]
+        chat_id = str(callback_query["from"]["id"])  # Convertir a string para comparar
+        callback_data = callback_query.get("data")
+        
+        # Extraer message_id del mensaje original
+        message_id = None
+        if "message" in callback_query and "message_id" in callback_query["message"]:
+            message_id = str(callback_query["message"]["message_id"])
+        
+        logger.info(f"Callback recibido - chat_id: {chat_id}, message_id: {message_id}, data: {callback_data}")
+        
         async with httpx.AsyncClient() as client:
             await client.post(
                 f"https://api.telegram.org/bot{bot_token}/answerCallbackQuery",
                 json={"callback_query_id": callback_id}
             )
-
-    return {"status": "ok"}
+        
+        if not callback_data:
+            logger.warning("No hay callback_data en el callback_query")
+            return {
+                "status": "error",
+                "message": "No se pudo obtener callback_data"
+            }
+        
+        if not message_id:
+            logger.warning("No hay message_id en el callback_query")
+            return {
+                "status": "error",
+                "message": "No se pudo obtener message_id del mensaje"
+            }
+        
+        # Buscar reminder_instance por message_id
+        from models import ReminderInstance
+        reminder_instance = db.query(ReminderInstance).filter(
+            ReminderInstance.message_id == message_id
+        ).first()
+        
+        if not reminder_instance:
+            logger.warning(f"No se encontró reminder_instance para message_id {message_id}")
+            return {
+                "status": "error",
+                "message": f"No se encontró reminder_instance para el message_id {message_id}"
+            }
+        
+        reminder_instance_id = reminder_instance.id
+        
+        # Determinar el estado según el callback_data
+        if callback_data == "taken":
+            instance_status = ReminderInstanceStatus.SUCCESS.value
+            user_response = "taken: Ya lo tomé"
+        elif callback_data == "skip":
+            instance_status = ReminderInstanceStatus.REJECTED.value  # Usar REJECTED para "skip"
+            user_response = "skip: Omitir"
+        elif callback_data == "confirm":
+            instance_status = ReminderInstanceStatus.SUCCESS.value
+            user_response = "confirm: Confirmado"
+        elif callback_data == "cancel":
+            instance_status = ReminderInstanceStatus.REJECTED.value
+            user_response = "cancel: Cancelado"
+        else:
+            # Para otros casos
+            instance_status = ReminderInstanceStatus.SUCCESS.value
+            user_response = f"{callback_data}: Respuesta recibida"
+        
+        # Buscar notification_log asociado al reminder_instance
+        from models import NotificationLog
+        notification_log = db.query(NotificationLog).filter(
+            NotificationLog.reminder_instance_id == reminder_instance_id,
+            NotificationLog.notification_type == "telegram"
+        ).first()
+        
+        # Actualizar notification_log con la respuesta si existe
+        if notification_log:
+            log_update = NotificationLogUpdate(
+                response=user_response,
+                delivered_at=datetime.now(),
+                status="delivered"
+            )
+            NotificationLogService.update(db, notification_log.id, log_update)
+            logger.info(f"NotificationLog {notification_log.id} actualizado con respuesta: {user_response}")
+        else:
+            logger.warning(f"No se encontró notification_log para reminder_instance_id {reminder_instance_id}")
+        
+        # Actualizar reminder_instance status
+        instance_update = ReminderInstanceUpdate(
+            status=instance_status,
+            taken_at=datetime.now() if callback_data == "taken" else None
+        )
+        ReminderInstanceService.update(db, reminder_instance_id, instance_update)
+        logger.info(f"Reminder instance {reminder_instance_id} actualizado a {instance_status}. Respuesta: {user_response}")
+        
+        return {
+            "status": "success",
+            "reminder_instance_id": reminder_instance_id,
+            "chat_id": chat_id,
+            "user_response": user_response,
+            "callback_data": callback_data,
+            "message": "Webhook procesado correctamente"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error procesando webhook de Telegram: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {
+            "status": "error",
+            "message": str(e)
+        }

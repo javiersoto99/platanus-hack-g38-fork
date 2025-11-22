@@ -15,6 +15,7 @@ class ReminderInstanceCreate(BaseModel):
     family_notified: Optional[bool] = False
     family_notified_at: Optional[datetime] = None
     notes: Optional[str] = None
+    message_id: Optional[str] = None
 
 
 class ReminderInstanceUpdate(BaseModel):
@@ -27,6 +28,7 @@ class ReminderInstanceUpdate(BaseModel):
     family_notified: Optional[bool] = None
     family_notified_at: Optional[datetime] = None
     notes: Optional[str] = None
+    message_id: Optional[str] = None
 
 
 class ReminderInstanceResponse(BaseModel):
@@ -42,6 +44,7 @@ class ReminderInstanceResponse(BaseModel):
     notes: Optional[str]
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
+    message_id: Optional[str] = None
 
     class Config:
         from_attributes = True

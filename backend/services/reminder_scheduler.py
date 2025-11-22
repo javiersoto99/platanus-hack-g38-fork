@@ -321,19 +321,32 @@ Solo devuelve el mensaje, sin comillas ni formato adicional."""
             
             # Enviar WhatsApp
             try:
-                # await send_whatsapp_message(
-                #     to=emergency_contact,
-                #     body_text=message,
-                #     buttons=buttons
-                # )
-                await send_telegram_message(
-                    chat_id=emergency_contact,
-                    text=message
+                response = await send_whatsapp_message(
+                    to=emergency_contact,
+                    body_text=message,
+                    buttons=buttons
                 )
+
+                print('response', response)
+
+                # response = await send_telegram_message(
+                #     chat_id=emergency_contact,
+                #     text=message
+                # )
+                # # Extraer message_id de la respuesta de Telegram
+                # message_id = response.get("result", {}).get("message_id") if response.get("ok") else None
+                # logger.info(f"Mensaje de Telegram enviado - message_id: {message_id}, chat_id: {emergency_contact}")
                 
                 # Actualizar estados a "waiting" y "sent"
+                # Extraer message_id de la respuesta de WhatsApp/Kapso
+                # La estructura es: {"messages": [{"id": "wamid.xxx"}]}
+                message_id = None
+                if "messages" in response and len(response["messages"]) > 0:
+                    message_id = response["messages"][0].get("id")
+                print(f"Mensaje de WhatsApp enviado - message_id: {message_id}, to: {emergency_contact}")
                 instance_update = ReminderInstanceUpdate(
-                    status=ReminderInstanceStatus.WAITING.value
+                    status=ReminderInstanceStatus.WAITING.value,
+                    message_id=str(message_id)
                 )
                 ReminderInstanceService.update(db, reminder_instance.id, instance_update)
                 

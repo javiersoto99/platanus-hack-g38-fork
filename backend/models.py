@@ -72,6 +72,7 @@ class ReminderInstance(Base):
     family_notified = Column(Boolean, default=False, nullable=True)
     family_notified_at = Column(DateTime, nullable=True)
     notes = Column(Text, nullable=True)
+    message_id = Column(String(255), nullable=True)
     created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=True)
     updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=True)
 
