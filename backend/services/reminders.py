@@ -30,35 +30,26 @@ class ReminderService:
     @staticmethod
     def create(db: Session, reminder_data: ReminderCreate) -> Reminder:
         """Crear un nuevo recordatorio"""
-        data = reminder_data.model_dump()
-        reminder_id = data.pop('id')
-        
-        # Construir la query con OVERRIDING SYSTEM VALUE
-        columns = ', '.join([f'"{k}"' for k in data.keys() if data[k] is not None])
-        values = ', '.join([f':{k}' for k in data.keys() if data[k] is not None])
-        params = {k: v for k, v in data.items() if v is not None}
-        params['id'] = reminder_id
-        
-        query = f"""
-            INSERT INTO reminders (id, {columns}) 
-            OVERRIDING SYSTEM VALUE 
-            VALUES (:id, {values})
-            RETURNING *
-        """
-        
+        reminder = Reminder(**reminder_data.model_dump())
+        db.add(reminder)
         try:
-            result = db.execute(text(query), params)
             db.commit()
-            # Obtener el recordatorio creado
-            reminder = db.query(Reminder).filter(Reminder.id == reminder_id).first()
+            db.refresh(reminder)
             return reminder
         except IntegrityError as e:
             db.rollback()
             error_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
             if 'foreign key' in error_msg.lower() or 'violates foreign key constraint' in error_msg.lower():
+                # Mensaje más específico basado en el error de la BD
+                if 'medicine' in error_msg.lower() and reminder_data.medicine:
+                    raise ValueError(f"Error: Medicine con ID {reminder_data.medicine} no existe")
+                elif 'appointment' in error_msg.lower() and reminder_data.appointment_id:
+                    raise ValueError(f"Error: Appointment con ID {reminder_data.appointment_id} no existe")
+                elif 'elderly_profile' in error_msg.lower() and reminder_data.elderly_profile_id:
+                    raise ValueError(f"Error: ElderlyProfile con ID {reminder_data.elderly_profile_id} no existe")
                 raise ValueError(
-                    f"Error: El ID {reminder_data.id} no existe en ninguna de las tablas referenciadas "
-                    "(appointments, elderly_profiles o medicines)"
+                    f"Error: Una de las foreign keys no existe. "
+                    f"Detalle: {error_msg}"
                 )
             raise ValueError(f"Error al crear el recordatorio: {error_msg}")
         except Exception as e:

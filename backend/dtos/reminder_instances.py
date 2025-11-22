@@ -1,12 +1,14 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from enums import ReminderInstanceStatus
 
 
 class ReminderInstanceCreate(BaseModel):
-    id: int  # Debe ser el mismo ID que el reminder
+    id: int  # ID único de la instancia (auto-increment)
+    reminder_id: int  # Foreign Key a reminders.id
     scheduled_datetime: datetime
-    status: Optional[str] = "pending"
+    status: Optional[str] = ReminderInstanceStatus.PENDING.value
     taken_at: Optional[datetime] = None
     retry_count: Optional[int] = 0
     max_retries: Optional[int] = 3
@@ -16,8 +18,9 @@ class ReminderInstanceCreate(BaseModel):
 
 
 class ReminderInstanceUpdate(BaseModel):
+    reminder_id: Optional[int] = None
     scheduled_datetime: Optional[datetime] = None
-    status: Optional[str] = None
+    status: Optional[str] = None  # Puede ser: pending, waiting, failure, success
     taken_at: Optional[datetime] = None
     retry_count: Optional[int] = None
     max_retries: Optional[int] = None
@@ -28,6 +31,7 @@ class ReminderInstanceUpdate(BaseModel):
 
 class ReminderInstanceResponse(BaseModel):
     id: int
+    reminder_id: int
     scheduled_datetime: datetime
     status: Optional[str]
     taken_at: Optional[datetime]

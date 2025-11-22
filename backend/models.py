@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, Date, ForeignKey, Numeric, Boolean
 from sqlalchemy.sql import func
 from database import Base
+from enums import ReminderInstanceStatus
 
 
 class User(Base):
@@ -61,9 +62,10 @@ class Medicine(Base):
 class ReminderInstance(Base):
     __tablename__ = "reminder_instances"
 
-    id = Column(Integer, ForeignKey("reminders.id", ondelete="CASCADE"), primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    reminder_id = Column(Integer, ForeignKey("reminders.id", ondelete="CASCADE"), nullable=False)
     scheduled_datetime = Column(DateTime, nullable=False)
-    status = Column(String, default="pending", nullable=True)
+    status = Column(String, default=ReminderInstanceStatus.PENDING.value, nullable=True)
     taken_at = Column(DateTime, nullable=True)
     retry_count = Column(Integer, default=0, nullable=True)
     max_retries = Column(Integer, default=3, nullable=True)
@@ -90,11 +92,14 @@ class NotificationLog(Base):
 class Reminder(Base):
     __tablename__ = "reminders"
 
-    id = Column(Integer, primary_key=True)  # Puede referenciar a appointments, elderly_profiles o medicines
+    id = Column(Integer, primary_key=True, autoincrement=True)  # ID único del reminder
     reminder_type = Column(String(50), nullable=False)
-    preiodicity = Column(String(50), nullable=True)  # Nota: typo en la BD original
-    start_date = Column(Date, nullable=False)
+    periodicity = Column(Integer, nullable=True)  # Minutos entre cada envío de recordatorio
+    start_date = Column(DateTime, nullable=False)  # Fecha y hora exacta del primer recordatorio
     end_date = Column(Date, nullable=True)
+    medicine = Column(Integer, ForeignKey("medicines.id", ondelete="CASCADE"), nullable=True)  # Solo si reminder_type == "medicine"
+    appointment_id = Column(Integer, ForeignKey("appointments.id", ondelete="CASCADE"), nullable=True)  # Solo si reminder_type == "appointment"
+    elderly_profile_id = Column(Integer, ForeignKey("elderly_profiles.id", ondelete="CASCADE"), nullable=True)  # Para otros tipos de reminders
     is_active = Column(Boolean, default=True, nullable=True)
     created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=True)
     updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=True)

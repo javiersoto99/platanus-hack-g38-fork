@@ -20,7 +20,7 @@ class ReminderInstanceService:
     @staticmethod
     def get_by_reminder_id(db: Session, reminder_id: int) -> List[ReminderInstance]:
         """Obtener todas las instancias de un recordatorio"""
-        return db.query(ReminderInstance).filter(ReminderInstance.id == reminder_id).all()
+        return db.query(ReminderInstance).filter(ReminderInstance.reminder_id == reminder_id).all()
 
     @staticmethod
     def get_by_status(db: Session, status: str) -> List[ReminderInstance]:
