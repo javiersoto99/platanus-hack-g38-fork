@@ -79,7 +79,8 @@ class ReminderInstance(Base):
 class NotificationLog(Base):
     __tablename__ = "notification_logs"
 
-    id = Column(Integer, ForeignKey("reminder_instances.id", ondelete="CASCADE"), primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    reminder_instance_id = Column(Integer, ForeignKey("reminder_instances.id", ondelete="CASCADE"), nullable=False)
     notification_type = Column(String(50), nullable=False)
     recepient_phone = Column(String, nullable=False)  # Nota: typo en la BD original
     status = Column(String(50), nullable=False)

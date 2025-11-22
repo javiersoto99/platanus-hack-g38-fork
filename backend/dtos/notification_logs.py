@@ -4,7 +4,7 @@ from typing import Optional
 
 
 class NotificationLogCreate(BaseModel):
-    id: int  # Debe ser el mismo ID que el reminder_instance
+    reminder_instance_id: int
     notification_type: str
     recepient_phone: str  # Nota: manteniendo el typo de la BD
     status: str
@@ -26,6 +26,7 @@ class NotificationLogUpdate(BaseModel):
 
 class NotificationLogResponse(BaseModel):
     id: int
+    reminder_instance_id: int
     notification_type: str
     recepient_phone: str
     status: str

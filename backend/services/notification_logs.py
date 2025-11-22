@@ -20,7 +20,7 @@ class NotificationLogService:
     @staticmethod
     def get_by_reminder_instance_id(db: Session, reminder_instance_id: int) -> List[NotificationLog]:
         """Obtener todos los logs de notificaciones de una instancia de recordatorio"""
-        return db.query(NotificationLog).filter(NotificationLog.id == reminder_instance_id).all()
+        return db.query(NotificationLog).filter(NotificationLog.reminder_instance_id == reminder_instance_id).all()
 
     @staticmethod
     def get_by_status(db: Session, status: str) -> List[NotificationLog]:
@@ -31,32 +31,20 @@ class NotificationLogService:
     def create(db: Session, log_data: NotificationLogCreate) -> NotificationLog:
         """Crear un nuevo log de notificación"""
         data = log_data.model_dump()
-        log_id = data.pop('id')
         
-        # Construir la query con OVERRIDING SYSTEM VALUE
-        columns = ', '.join([f'"{k}"' for k in data.keys() if data[k] is not None])
-        values = ', '.join([f':{k}' for k in data.keys() if data[k] is not None])
-        params = {k: v for k, v in data.items() if v is not None}
-        params['id'] = log_id
-        
-        query = f"""
-            INSERT INTO notification_logs (id, {columns}) 
-            OVERRIDING SYSTEM VALUE 
-            VALUES (:id, {values})
-            RETURNING *
-        """
+        # Crear el objeto directamente con SQLAlchemy
+        log = NotificationLog(**data)
         
         try:
-            result = db.execute(text(query), params)
+            db.add(log)
             db.commit()
-            # Obtener el log creado
-            log = db.query(NotificationLog).filter(NotificationLog.id == log_id).first()
+            db.refresh(log)
             return log
         except IntegrityError as e:
             db.rollback()
             error_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
             if 'foreign key' in error_msg.lower() or 'violates foreign key constraint' in error_msg.lower():
-                raise ValueError(f"Error: El ID {log_data.id} no existe en la tabla reminder_instances")
+                raise ValueError(f"Error: El reminder_instance_id {log_data.reminder_instance_id} no existe en la tabla reminder_instances")
             raise ValueError(f"Error al crear el log de notificación: {error_msg}")
         except Exception as e:
             db.rollback()

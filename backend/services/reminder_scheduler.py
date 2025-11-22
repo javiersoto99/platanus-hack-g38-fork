@@ -2,13 +2,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
-from models import Reminder, ReminderInstance, Appointment, Medicine, ElderlyProfile
+from models import Reminder, ReminderInstance, Appointment, Medicine, ElderlyProfile, User
 from services.reminder_instances import ReminderInstanceService
 from services.notification_logs import NotificationLogService
 from dtos.reminder_instances import ReminderInstanceCreate
 from dtos.notification_logs import NotificationLogCreate
 from enums import ReminderInstanceStatus
 from integrations.kapso import send_whatsapp_message
+from integrations.gemini import generate_content
 import logging
 
 logger = logging.getLogger(__name__)
@@ -151,13 +152,84 @@ class ReminderSchedulerService:
         return None
     
     @staticmethod
-    def create_whatsapp_message(reminder: Reminder) -> tuple[str, list]:
+    def create_whatsapp_message(db: Session, reminder: Reminder) -> tuple[str, list]:
         """
         Crea el mensaje de WhatsApp apropiado según el tipo de reminder
         Retorna: (mensaje, botones)
         """
         if reminder.reminder_type == "medicine":
-            message = "Recordatorio: Es hora de tomar tu medicamento. Por favor confirma cuando lo hayas tomado."
+            # Obtener información del medicamento
+            if not reminder.medicine:
+                logger.error(f"Reminder {reminder.id} de tipo medicine no tiene campo medicine")
+                message = "Recordatorio: Es hora de tomar tu medicamento. Por favor confirma cuando lo hayas tomado."
+            else:
+                medicine = db.query(Medicine).filter(Medicine.id == reminder.medicine).first()
+                if not medicine:
+                    logger.error(f"Medicine con ID {reminder.medicine} no encontrado")
+                    message = "Recordatorio: Es hora de tomar tu medicamento. Por favor confirma cuando lo hayas tomado."
+                else:
+                    # Obtener información de la persona mayor
+                    elderly_profile = db.query(ElderlyProfile).filter(
+                        ElderlyProfile.id == medicine.id
+                    ).first()
+                    
+                    elderly_name = None
+                    if elderly_profile:
+                        user = db.query(User).filter(User.id == elderly_profile.id).first()
+                        if user:
+                            elderly_name = user.full_name
+                    
+                    try:
+                        tablets_info = f"{medicine.tablets_per_dose} tableta(s)" if medicine.tablets_per_dose else "la dosis indicada"
+                        
+                        name_context = f"\n- Nombre de la persona: {elderly_name}" if elderly_name else ""
+                        name_instruction = f"\n- Dirigirse a la persona por su nombre: {elderly_name}" if elderly_name else "\n- Usar un saludo genérico y amigable"
+                        
+                        prompt = f"""Genera un mensaje de recordatorio amigable y claro en español para tomar medicamento. 
+
+Información del medicamento:
+- Nombre: {medicine.name}
+- Dosis: {tablets_info}{name_context}
+
+El mensaje debe:
+- Ser cálido y empático, dirigido a una persona mayor{name_instruction}
+- Mencionar el nombre del medicamento: {medicine.name}
+- Especificar claramente la cantidad: {tablets_info}
+- Ser breve (máximo 2-3 oraciones)
+- Incluir una solicitud para confirmar cuando se haya tomado
+- Usar un tono amigable y no alarmante
+
+Solo devuelve el mensaje, sin comillas ni formato adicional."""
+
+                        # Generar contenido con Gemini
+                        gemini_response = generate_content(prompt)
+                        
+                        # Extraer el texto de la respuesta de Gemini
+                        if gemini_response and "candidates" in gemini_response:
+                            candidates = gemini_response.get("candidates", [])
+                            if candidates and len(candidates) > 0:
+                                content = candidates[0].get("content", {})
+                                parts = content.get("parts", [])
+                                if parts and len(parts) > 0:
+                                    message = parts[0].get("text", "").strip()
+                                    if not message:
+                                        raise ValueError("Respuesta vacía de Gemini")
+                                else:
+                                    raise ValueError("No se encontraron parts en la respuesta")
+                            else:
+                                raise ValueError("No se encontraron candidates en la respuesta")
+                        else:
+                            raise ValueError("Formato de respuesta de Gemini inválido")
+                        
+                        logger.info(f"Mensaje generado por IA para medicamento {medicine.name}: {message}")
+                        
+                    except Exception as e:
+                        logger.error(f"Error al generar mensaje con IA: {str(e)}. Usando mensaje por defecto.")
+                        # Mensaje por defecto con información del medicamento
+                        tablets_info = f"{medicine.tablets_per_dose} tableta(s)" if medicine.tablets_per_dose else "la dosis indicada"
+                        greeting = f"Querido/a {elderly_name}, " if elderly_name else ""
+                        message = f"{greeting}Recordatorio: Es hora de tomar {medicine.name} ({tablets_info}). Por favor confirma cuando lo hayas tomado."
+            
             buttons = [
                 {"id": "taken", "title": "Ya lo tomé"},
                 {"id": "skip", "title": "Omitir"}
@@ -232,9 +304,9 @@ class ReminderSchedulerService:
                 reminder_instance = ReminderInstanceService.create(db, instance_data)
             
             # Crear notification_log inicial
-            message, buttons = ReminderSchedulerService.create_whatsapp_message(reminder)
+            message, buttons = ReminderSchedulerService.create_whatsapp_message(db, reminder)
             log_data = NotificationLogCreate(
-                id=reminder_instance.id,
+                reminder_instance_id=reminder_instance.id,
                 notification_type="whatsapp",
                 recepient_phone=emergency_contact,
                 status="pending",
