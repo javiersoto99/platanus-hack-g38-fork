@@ -7,15 +7,15 @@ import clsx from "clsx"
 interface SidebarProps {
   activeView: "calendar" | "reminders" | "appointments"
   onViewChange: (view: "calendar" | "reminders" | "appointments") => void
+  onPatientClick?: () => void
 }
 
-export function Sidebar({ activeView, onViewChange }: SidebarProps) {
+export function Sidebar({ activeView, onViewChange, onPatientClick }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const menuItems = [
     { id: "calendar", label: "Calendario", icon: Calendar },
     { id: "reminders", label: "Recordatorios", icon: Pill },
-    { id: "appointments", label: "Citas Médicas", icon: Stethoscope },
   ] as const
 
   return (
@@ -52,7 +52,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
           {menuItems.map(({ id, label, icon: Icon }) => (
             <li key={id}>
               <button
-                onClick={() => onViewChange(id as "calendar" | "reminders" | "appointments")}
+                onClick={() => onViewChange(id as "calendar" | "reminders")}
                 className={clsx(
                   "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 relative",
                   activeView === id ? "bg-primary text-primary-foreground shadow-md" : "text-foreground hover:bg-muted",
@@ -70,11 +70,14 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
       {/* Elderly Info Card */}
       {!isCollapsed && (
         <div className="p-4 border-t border-border bg-muted/30">
-          <div className="bg-primary/10 rounded-lg p-3 text-center">
+          <button
+            onClick={onPatientClick}
+            className="w-full bg-primary/10 rounded-lg p-3 text-center hover:bg-primary/20 transition-colors cursor-pointer"
+          >
             <p className="text-xs text-muted-foreground mb-1">Cuidando a:</p>
             <p className="font-semibold text-foreground">Abuelo Juan</p>
             <p className="text-xs text-muted-foreground mt-1">87 años</p>
-          </div>
+          </button>
         </div>
       )}
     </aside>

@@ -29,11 +29,10 @@ class NotificationLogService:
     @staticmethod
     def create(db: Session, log_data: NotificationLogCreate) -> NotificationLog:
         """Crear un nuevo log de notificación"""
-        log = NotificationLog(**log_data.model_dump())
-        print('log data', log_data)
-        #get reminder instance
-        reminder_instance = db.query(ReminderInstance).filter(ReminderInstance.id == log_data.reminder_instance_id).first()
-        print('reminder instance dentro del create del reminder log', reminder_instance)
+        data = log_data.model_dump()
+        
+        # Crear el objeto directamente con SQLAlchemy
+        log = NotificationLog(**data)
         
         try:
             db.add(log)

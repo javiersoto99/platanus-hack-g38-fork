@@ -26,6 +26,7 @@ class NotificationLogUpdate(BaseModel):
 
 class NotificationLogResponse(BaseModel):
     id: int
+    reminder_instance_id: int
     notification_type: str
     recepient_phone: str
     status: str
