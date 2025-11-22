@@ -289,3 +289,12 @@ async def whatsapp_webhook(
             "message": str(e)
         }
 
+@router.post("/webhook/telegram")
+async def telegram_webhook(request: Request, db: Session = Depends(get_db)):
+    body = await request.json()
+    logger.info(f"Webhook recibido: {body}")
+    
+    return {
+        "status": "success",
+        "message": "Webhook procesado correctamente"
+    }
