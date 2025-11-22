@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, text
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
-from models import Reminder, ReminderInstance, Appointment, Medicine, ElderlyProfile, User
+from models import Reminder, ReminderInstance, Appointment, Medicine, ElderlyProfile, NotificationLog
 from services.reminder_instances import ReminderInstanceService
 from services.notification_logs import NotificationLogService
 from dtos.reminder_instances import ReminderInstanceCreate
@@ -296,69 +296,87 @@ Solo devuelve el mensaje, sin comillas ni formato adicional."""
                 max_attempts = 10
                 reminder_instance = None
                 
-                for attempt in range(max_attempts):
-                    max_id_result = db.query(func.max(ReminderInstance.id)).scalar()
-                    next_id = (max_id_result or 0) + 1
-                    
-                    # Verificar si el ID ya existe (por si hay gaps en la secuencia)
-                    existing = db.query(ReminderInstance).filter(ReminderInstance.id == next_id).first()
-                    if existing:
-                        # Si existe, usar el siguiente ID disponible
-                        next_id = max_id_result + 1 if max_id_result else 1
-                    
-                    instance_data = ReminderInstanceCreate(
-                        id=next_id,
-                        reminder_id=reminder.id,
-                        scheduled_datetime=scheduled_datetime,
-                        status=ReminderInstanceStatus.PENDING.value
-                    )
-                    
-                    try:
-                        reminder_instance = ReminderInstanceService.create(db, instance_data)
-                        # Si llegamos aquí, la creación fue exitosa
-                        break
-                    except ValueError as e:
-                        # Si es un error de ID duplicado, intentar con el siguiente ID
-                        if 'duplicate' in str(e).lower() or 'unique' in str(e).lower() or 'primary key' in str(e).lower():
-                            logger.warning(f"ID {next_id} ya existe, intentando con siguiente ID...")
-                            continue
-                        # Si es otro tipo de error, retornar
-                        error_msg = f"Error al crear reminder_instance para reminder {reminder.id}: {str(e)}"
-                        logger.error(error_msg)
-                        result["error"] = error_msg
-                        return result
-                    except Exception as e:
-                        # Para otros errores, retornar
-                        error_msg = f"Error inesperado al crear reminder_instance para reminder {reminder.id}: {str(e)}"
-                        logger.error(error_msg)
-                        result["error"] = error_msg
-                        return result
+                instance_data = ReminderInstanceCreate(
+                    id=next_id,
+                    reminder_id=reminder.id,
+                    scheduled_datetime=scheduled_datetime,
+                    status=ReminderInstanceStatus.PENDING.value
+                )
                 
-                # Validar que la instancia se creó correctamente
-                if not reminder_instance:
-                    error_msg = f"No se pudo crear reminder_instance para reminder {reminder.id} después de {max_attempts} intentos"
+                try:
+                    reminder_instance = ReminderInstanceService.create(db, instance_data)
+                    logger.info(f"ReminderInstance creado con id={reminder_instance.id if reminder_instance else None}")
+                except Exception as e:
+                    db.rollback()
+                    error_msg = f"Error al crear reminder_instance para reminder {reminder.id}: {str(e)}"
                     logger.error(error_msg)
                     result["error"] = error_msg
                     return result
                 
-                # Verificar que la instancia realmente existe en la base de datos
-                db.refresh(reminder_instance)
+                # Validar que la instancia se creó correctamente
+                if not reminder_instance:
+                    db.rollback()
+                    error_msg = f"No se pudo crear reminder_instance para reminder {reminder.id}"
+                    logger.error(error_msg)
+                    result["error"] = error_msg
+                    return result
+                
+                # Verificar que tiene ID válido
                 if not reminder_instance.id:
+                    db.rollback()
                     error_msg = f"ReminderInstance creado pero sin ID válido para reminder {reminder.id}"
                     logger.error(error_msg)
                     result["error"] = error_msg
                     return result
+                
+                logger.info(f"ReminderInstance {reminder_instance.id} creado, listo para crear notification_log")
             
-            # Crear notification_log inicial
-            message, buttons = ReminderSchedulerService.create_whatsapp_message(db, reminder)
-            log_data = NotificationLogCreate(
-                reminder_instance_id=reminder_instance.id,
-                notification_type="whatsapp",
-                recepient_phone=emergency_contact,
-                status="pending",
-                sent_at=datetime.now()
-            )
-            notification_log = NotificationLogService.create(db, log_data)
+            # Validar que reminder_instance existe antes de crear notification_log
+            if not reminder_instance or not reminder_instance.id:
+                error_msg = f"ReminderInstance inválido para reminder {reminder.id}"
+                logger.error(error_msg)
+                result["error"] = error_msg
+                return result
+            
+            # Asegurar que el reminder_instance está visible en la base de datos
+            # ReminderInstanceService.create ya hizo commit, pero refrescamos para sincronizar
+            db.refresh(reminder_instance)
+            
+            # Verificar que no existe ya un notification_log con ese ID
+            existing_log = db.query(NotificationLog).filter(NotificationLog.id == reminder_instance.id).first()
+            if existing_log:
+                logger.warning(f"Ya existe un notification_log con id={reminder_instance.id}, usando el existente")
+                notification_log = existing_log
+            else:
+                # Crear notification_log inicial
+                # El reminder_instance ya existe y está confirmado en la base de datos
+                message, buttons = ReminderSchedulerService.create_whatsapp_message(reminder)
+                log_data = NotificationLogCreate(
+                    id=reminder_instance.id,
+                    reminder_instance_id=reminder_instance.id,
+                    notification_type="whatsapp",
+                    recepient_phone=emergency_contact,
+                    status="pending",
+                    sent_at=datetime.now()
+                )
+                
+                try:
+                    notification_log = NotificationLogService.create(db, log_data)
+                    # Hacer commit después de crear ambos objetos (reminder_instance y notification_log)
+                    db.commit()
+                    if not notification_log:
+                        db.rollback()
+                        error_msg = f"No se pudo crear notification_log para reminder_instance {reminder_instance.id}"
+                        logger.error(error_msg)
+                        result["error"] = error_msg
+                        return result
+                    logger.info(f"NotificationLog creado exitosamente con id={notification_log.id}, reminder_instance_id={notification_log.reminder_instance_id}")
+                except Exception as e:
+                    db.rollback()
+                    error_msg = f"Error al crear notification_log para reminder_instance {reminder_instance.id}: {str(e)}"
+                    logger.error(error_msg)
+                    result["error"] = error_msg
+                    return result
             
             # Enviar WhatsApp
             try:

@@ -36,15 +36,21 @@ class NotificationLogService:
         log = NotificationLog(**data)
         
         try:
-            db.add(log)
-            db.commit()
-            db.refresh(log)
+            result = db.execute(text(query), params)
+            db.flush()  # Hacer flush para que la inserción sea visible en la misma transacción
+            # Obtener el log creado
+            log = db.query(NotificationLog).filter(NotificationLog.id == log_id).first()
             return log
         except IntegrityError as e:
             db.rollback()
             error_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
             if 'foreign key' in error_msg.lower() or 'violates foreign key constraint' in error_msg.lower():
-                raise ValueError(f"Error: El reminder_instance_id {log_data.reminder_instance_id} no existe en la tabla reminder_instances")
+                # Verificar si es un problema con reminder_instance_id
+                if 'reminder_instance_id' in error_msg.lower():
+                    raise ValueError(f"Error: El reminder_instance_id {log_data.reminder_instance_id} no existe en la tabla reminder_instances")
+                # O si es un problema con el id (que también es foreign key)
+                else:
+                    raise ValueError(f"Error: El reminder_instance_id {log_data.reminder_instance_id} (id={log_data.id}) no existe en la tabla reminder_instances")
             raise ValueError(f"Error al crear el log de notificación: {error_msg}")
         except Exception as e:
             db.rollback()

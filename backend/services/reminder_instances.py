@@ -53,7 +53,7 @@ class ReminderInstanceService:
         
         try:
             result = db.execute(text(query), params)
-            db.commit()
+            db.flush()  # Hacer flush en lugar de commit para mantener la transacción abierta
             # Obtener la instancia creada
             instance = db.query(ReminderInstance).filter(ReminderInstance.id == instance_id).first()
             if not instance:
