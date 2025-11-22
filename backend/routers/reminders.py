@@ -294,12 +294,11 @@ async def whatsapp_webhook(
         db.flush()
         db.refresh(notification_log)
         
-        # Actualizar reminder_instance status
-        instance_update = ReminderInstanceUpdate(
-            status=instance_status,
-            taken_at=datetime.now() if is_positive_response else None
-        )
-        ReminderInstanceService.update(db, reminder_instance_id, instance_update)
+        # Actualizar reminder_instance status directamente (sin usar el servicio para evitar commit prematuro)
+        reminder_instance.status = instance_status
+        if is_positive_response:
+            reminder_instance.taken_at = datetime.now()
+        db.flush()
         
         # Si la respuesta fue positiva, restar 1 al total de tablets_left de la medicina
         if is_positive_response:
@@ -312,7 +311,6 @@ async def whatsapp_webhook(
                 if medicine and medicine.tablets_left is not None and medicine.tablets_left > 0:
                     # Restar 1 al total de tablets_left
                     medicine.tablets_left = medicine.tablets_left - 1
-                    db.flush()
                     print(f"Medicina {medicine.id} ({medicine.name}): tablets_left actualizado de {medicine.tablets_left + 1} a {medicine.tablets_left}")
                 elif medicine:
                     print(f"Medicina {medicine.id} ({medicine.name}): tablets_left es {medicine.tablets_left}, no se puede restar")
@@ -320,6 +318,9 @@ async def whatsapp_webhook(
                 print(f"Reminder {reminder.id} no tiene medicine asociada")
             else:
                 print(f"No se encontró reminder con id {reminder_instance.reminder_id}")
+        
+        # Hacer un solo commit al final para guardar todos los cambios (notification_log, reminder_instance, medicine)
+        db.commit()
         
         logger.info(f"NotificationLog {notification_log.id} creado con status {log_status}. Reminder instance {reminder_instance_id} actualizado a {instance_status}. Respuesta: {user_response}")
         
