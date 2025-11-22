@@ -20,9 +20,16 @@ export default function Home() {
     setShowPatientProfile(false)
   }
 
+  const handleViewChange = (view: ViewType) => {
+    setActiveView(view)
+    if (showPatientProfile) {
+      setShowPatientProfile(false)
+    }
+  }
+
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar activeView={activeView} onViewChange={setActiveView} onPatientClick={handlePatientClick} />
+      <Sidebar activeView={activeView} onViewChange={handleViewChange} onPatientClick={handlePatientClick} />
       <main className="flex-1 overflow-y-auto">
         {showPatientProfile ? (
           <PatientProfile onBack={handleBackFromProfile} />

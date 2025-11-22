@@ -9,8 +9,10 @@ from dtos.reminder_instances import ReminderInstanceCreate, ReminderInstanceUpda
 from dtos.notification_logs import NotificationLogUpdate
 from enums import ReminderInstanceStatus
 from integrations.kapso import send_whatsapp_message
+from integrations.telegram import send_telegram_message
 from integrations.gemini import generate_content
 import logging
+from models import User
 
 logger = logging.getLogger(__name__)
 
@@ -292,10 +294,14 @@ Solo devuelve el mensaje, sin comillas ni formato adicional."""
             
             # Enviar WhatsApp
             try:
-                await send_whatsapp_message(
-                    to=emergency_contact,
-                    body_text=message,
-                    buttons=buttons
+                # await send_whatsapp_message(
+                #     to=emergency_contact,
+                #     body_text=message,
+                #     buttons=buttons
+                # )
+                await send_telegram_message(
+                    chat_id=emergency_contact,
+                    text=message
                 )
                 
                 # Actualizar estados a "waiting" y "sent"
@@ -355,6 +361,7 @@ Solo devuelve el mensaje, sin comillas ni formato adicional."""
         }
         
         for reminder, scheduled_datetime in reminders_to_process:
+            print('processing reminder', reminder)
             result = await ReminderSchedulerService.process_reminder(db, reminder, scheduled_datetime)
             results["processed"] += 1
             
