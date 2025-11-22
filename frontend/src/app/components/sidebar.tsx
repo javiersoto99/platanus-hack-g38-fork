@@ -29,8 +29,12 @@ export function Sidebar({ activeView, onViewChange, onPatientClick }: SidebarPro
       <div className="p-6 border-b border-border flex items-center justify-between">
         {!isCollapsed && (
           <div className="flex items-center gap-3 flex-1">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center flex-shrink-0">
-              <span className="text-primary-foreground font-bold text-lg">M</span>
+            <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+              <img 
+                src="/logo-memo.png" 
+                alt="Memo" 
+                className="w-full h-full object-cover rounded-lg"
+              />
             </div>
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-foreground">Memo</h1>

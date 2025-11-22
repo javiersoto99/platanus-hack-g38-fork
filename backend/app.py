@@ -3,12 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import List, Dict
+import os
 from integrations.twilio import create_call
 from integrations.gemini import generate_content
 from integrations.kapso import send_whatsapp_message
 from integrations.telegram import send_telegram_message
 from routers import appointments, elderly_profiles, health_workers, users, medicines, notification_logs, reminders, reminder_instances, family_elderly_relationship
 from database import Base, engine
+from services.cron_service import init_scheduler, shutdown_scheduler
 # from routers import auth
 # from config import settings
 import os
@@ -31,6 +33,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Inicializar el scheduler de cron al arrancar la aplicación
+@app.on_event("startup")
+async def startup_event():
+    # Obtener intervalo del .env o usar 60 segundos por defecto
+    interval_seconds = int(os.getenv('REMINDER_CRON_INTERVAL_SECONDS', '20'))
+    init_scheduler(interval_seconds=interval_seconds)
+    print(f"✅ Scheduler de recordatorios iniciado (intervalo: {interval_seconds} segundos)")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    shutdown_scheduler()
+    print("✅ Scheduler de recordatorios detenido")
+
 # Importar todos los modelos para que estén registrados en Base.metadata
 from models import Appointment, ElderlyProfile, HealthWorker, User, Medicine, NotificationLog, ReminderInstance, Reminder, FamilyElderlyRelationship
 
@@ -52,10 +81,14 @@ async def health_check():
     return {"status": "healthy!"}
 
 @app.post("/calls/create")
-async def create_phone_call():
+async def create_phone_call(to: str = None, message: str = None):
     """Endpoint para crear una llamada telefónica usando Twilio"""
     try:
-        call_sid = create_call()
+        # Valores por defecto para testing
+        to_number = to or os.getenv('DEFAULT_PHONE_NUMBER', '+56979745451')
+        call_message = message or "Hola, este es un recordatorio de prueba."
+        
+        call_sid = create_call(to_number, call_message)
         return {"status": "success", "message": "Llamada iniciada correctamente", "call_sid": call_sid}
     except Exception as e:
         return {"status": "error", "message": str(e)}

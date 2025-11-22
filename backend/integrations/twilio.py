@@ -1,25 +1,57 @@
 import os
 from twilio.rest import Client
+from typing import Optional
 
 
-def create_call():
+def create_call(
+    to: str,
+    message: str,
+    from_number: Optional[str] = None,
+    webhook_url: Optional[str] = None
+) -> str:
+    """
+    Crea una llamada telefónica usando Twilio
+    
+    Args:
+        to: Número de teléfono destino (formato: +56979745451)
+        message: Mensaje a decir en la llamada
+        from_number: Número de teléfono origen (opcional, usa el de .env si no se proporciona)
+        webhook_url: URL del webhook para recibir respuestas (opcional)
+    
+    Returns:
+        call_sid: ID de la llamada creada
+    """
     account_sid = os.getenv('TWILIO_ACCOUNT_SID')
     auth_token = os.getenv('TWILIO_AUTH_TOKEN')
     
+    if not account_sid or not auth_token:
+        raise ValueError("TWILIO_ACCOUNT_SID y TWILIO_AUTH_TOKEN deben estar configurados en las variables de entorno")
+    
     client = Client(account_sid, auth_token)
     
-    twiml = """<Response>
-              <Say voice="alice" language="es-ES">Hola abuelo, recuerda tomar tu dosis de 500mg de paracetamol.</Say>
-              <Gather input="speech" language="es-ES" action="https://webhook.site/2aa03dd3-f1b5-4bdd-97a9-08379c8822d4">
+    # Usar el número de origen de .env si no se proporciona uno
+    if not from_number:
+        from_number = os.getenv('TWILIO_PHONE_NUMBER', '+19895752358')
+    
+    # Construir el mensaje TwiML
+    twiml = f"""<Response>
+              <Say voice="alice" language="es-ES">{message}</Say>"""
+    
+    # Si hay webhook_url, agregar Gather para recibir respuesta
+    if webhook_url:
+        twiml += f"""
+              <Gather input="speech" language="es-ES" action="{webhook_url}">
                 <Say voice="alice" language="es-ES">
-                  Si ya la tomaste, di "sí".
+                  Si ya lo hiciste, di "sí".
                 </Say>
-              </Gather>
+              </Gather>"""
+    
+    twiml += """
            </Response>"""
     
     call = client.calls.create(
-        from_='+19895752358',
-        to='+56979745451',
+        from_=from_number,
+        to=to,
         twiml=twiml
     )
     
@@ -27,4 +59,7 @@ def create_call():
 
 
 if __name__ == "__main__":
-    create_call()
+    create_call(
+        to='+56979745451',
+        message='Hola abuelo, recuerda tomar tu dosis de 500mg de paracetamol.'
+    )
