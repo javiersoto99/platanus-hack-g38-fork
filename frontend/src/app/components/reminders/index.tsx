@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import {
@@ -19,7 +20,6 @@ import type { ReminderInstance } from "./components/types"
 
 function RemindersViewContent() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   
   // Get initial tab from URL or default to "today"
   const getInitialTab = (): "today" | "config" => {
