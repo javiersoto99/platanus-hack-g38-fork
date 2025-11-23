@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
-import { MessageCircle, Phone, Pill, RotateCcw, History, Check } from "lucide-react"
+import { MessageCircle, Phone, Pill, RotateCcw, History } from "lucide-react"
 import { ReminderInstance } from "./types"
 import ReminderLogModal from "./reminder-log-modal"
 
@@ -24,9 +24,11 @@ export function TimelineItem({ instance, onRectify, isMarking = false }: Timelin
         className={`relative z-10 w-12 h-12 rounded-full flex items-center justify-center border-4 border-background ${
           instance.status === "success"
             ? "bg-green-500"
-            : instance.status === "failed"
+            : instance.status === "failed" || instance.status === "failure" || instance.status === "rejected"
               ? "bg-red-500"
-              : "bg-gray-300"
+              : instance.status === "waiting"
+                ? "bg-yellow-500"
+                : "bg-gray-300"
         }`}
       >
         {instance.method === "whatsapp" || !instance.method ? (
@@ -51,16 +53,24 @@ export function TimelineItem({ instance, onRectify, isMarking = false }: Timelin
                 className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                   instance.status === "success"
                     ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                    : instance.status === "failed"
+                    : instance.status === "failed" || instance.status === "failure" || instance.status === "rejected"
                       ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                      : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
+                      : instance.status === "waiting"
+                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                        : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
                 }`}
               >
                 {instance.status === "success"
                   ? "Tomado"
                   : instance.status === "failed"
-                    ? "No tomado"
-                    : "Pendiente"}
+                    ? "Fallido"
+                    : instance.status === "failure"
+                      ? "Error"
+                      : instance.status === "rejected"
+                        ? "Rechazado"
+                        : instance.status === "waiting"
+                          ? "Esperando"
+                          : "Pendiente"}
               </span>
             </div>
 
@@ -85,17 +95,6 @@ export function TimelineItem({ instance, onRectify, isMarking = false }: Timelin
 
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
-              {(instance.status === "failed" || instance.status === "pending") && onRectify && (
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => onRectify(instance.id)}
-                  disabled={isMarking}
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  {isMarking ? "Guardando..." : "Marcar como tomado"}
-                </Button>
-              )}
               <Button variant="ghost" size="icon" onClick={() => setShowLog(true)} aria-label="Ver historial">
                 <History className="w-5 h-5" />
               </Button>

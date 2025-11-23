@@ -8,7 +8,7 @@ export function CalendarSkeleton() {
     <div className="h-full flex flex-col bg-background">
       <div className="p-6">
         <h2 className="text-2xl font-bold text-foreground mb-2">Calendario</h2>
-        <p className="text-muted-foreground">Eventos de medicinas y citas médicas</p>
+        <p className="text-muted-foreground">Eventos de medicinas</p>
       </div>
 
       <div className="flex-1 overflow-auto p-6">

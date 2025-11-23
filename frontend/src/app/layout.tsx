@@ -8,7 +8,7 @@ const geist = Geist({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Memo - Cuidado para tus mayores",
-  description: "Gestiona medicinas y citas médicas de tus abuelos con Memo",
+  description: "Gestiona medicinas y recordatorios de tus abuelos con Memo",
   generator: "v0.app",
   icons: {
     icon: [
