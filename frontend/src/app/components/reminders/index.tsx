@@ -244,6 +244,10 @@ function RemindersViewContent() {
         reminder={selectedReminder}
         onDelete={handleShowDeleteDialog}
         onToggleActive={handleToggleActive}
+        onSave={async () => {
+          await loadTabData("config", true)
+          await loadTabData("today", true)
+        }}
         isToggling={togglingReminderId === selectedReminder?.id}
         isDeleting={deletingReminderId === selectedReminder?.id}
       />
