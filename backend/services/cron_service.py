@@ -36,6 +36,8 @@ def init_scheduler(interval_seconds: int = 20):
             # Procesar llamadas pendientes (es async, usar asyncio.run)
             try:
                 print('Processing pending calls')
+                print('owo', flush=True)
+                logger.info('logger.info owo')
                 results = asyncio.run(
                     ReminderCallService.process_pending_calls(db)
                 )

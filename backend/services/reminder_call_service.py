@@ -297,6 +297,8 @@ class ReminderCallService:
         Returns:
             Diccionario con estadísticas del procesamiento
         """
+        print('in async process_pending_calls', flush=True)
+        logger.info('logger.info in async process_pending_calls')
         pending_instances = ReminderCallService.get_pending_instances_for_call(db)
         
         results = {
@@ -308,6 +310,7 @@ class ReminderCallService:
         
         for instance in pending_instances:
             result = await ReminderCallService.process_reminder_call(db, instance)
+            print('result from process_reminder_call', result, flush=True)
             results["processed"] += 1
             
             if result["success"]:
