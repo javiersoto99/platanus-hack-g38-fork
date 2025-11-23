@@ -70,7 +70,7 @@ export function ReminderInstanceTimeline({
                 <div className={`text-[10px] font-medium mt-0.5 ${
                   instance.status === "success"
                     ? "text-green-700 dark:text-green-400"
-                    : instance.status === "failed" || instance.status === "failure"
+                    : instance.status === "failed" || instance.status === "rejected"
                       ? "text-red-700 dark:text-red-400"
                       : instance.status === "waiting"
                         ? "text-yellow-700 dark:text-yellow-400"
@@ -78,11 +78,13 @@ export function ReminderInstanceTimeline({
                 }`}>
                   {instance.status === "success"
                     ? "Tomado"
-                    : instance.status === "failed" || instance.status === "failure"
+                    : instance.status === "failed"
                       ? "Fallido"
-                      : instance.status === "waiting"
-                        ? "Esperando"
-                        : "Pendiente"}
+                      : instance.status === "rejected"
+                        ? "Rechazado"
+                        : instance.status === "waiting"
+                          ? "Esperando"
+                          : "Pendiente"}
                 </div>
               </div>
             </div>
