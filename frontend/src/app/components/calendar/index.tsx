@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import clsx from "clsx"
 import { MonthlyCalendarView } from "@/app/components/calendar/monthly-calendar-view"
 import { DailyCalendarView } from "@/app/components/calendar/daily-calendar-view"
@@ -18,12 +18,7 @@ export function CalendarView() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Load events when month changes
-  useEffect(() => {
-    loadEvents()
-  }, [currentDate.getFullYear(), currentDate.getMonth()])
-
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     setLoading(true)
     try {
       const monthEvents = await getCalendarEventsForMonth(
@@ -36,7 +31,13 @@ export function CalendarView() {
     } finally {
       setLoading(false)
     }
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate.getFullYear(), currentDate.getMonth()])
+
+  // Load events when month changes
+  useEffect(() => {
+    loadEvents()
+  }, [loadEvents])
 
   const getEventsForDayWrapper = (day: number) => getEventsForDay(events, day)
 

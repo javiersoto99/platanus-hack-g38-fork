@@ -2,6 +2,7 @@
 
 import { Calendar, Pill, ChevronLeft } from "lucide-react"
 import { useState } from "react"
+import Image from "next/image"
 import clsx from "clsx"
 
 interface SidebarProps {
@@ -30,11 +31,12 @@ export function Sidebar({ activeView, onViewChange, onPatientClick, isProfileVie
       <div className="p-6 border-b border-border flex items-center justify-between">
         {!isCollapsed && (
           <div className="flex items-center gap-3 flex-1">
-            <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-              <img 
+            <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 relative">
+              <Image 
                 src="/logo-memo.png" 
                 alt="Memo" 
-                className="w-full h-full object-cover rounded-lg"
+                fill
+                className="object-cover rounded-lg"
               />
             </div>
             <div className="min-w-0">

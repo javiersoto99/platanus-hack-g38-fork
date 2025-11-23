@@ -63,7 +63,7 @@ function RemindersViewContent() {
       setError(null)
       try {
         const instancesData = await RemindersService.getTodayReminderInstances()
-        setReminderInstances(instancesData)
+        setReminderInstances(Array.isArray(instancesData) ? [...instancesData] : [])
         loadedTabsRef.current.add("today")
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error al cargar datos")
@@ -87,9 +87,14 @@ function RemindersViewContent() {
     }
   }, [])
 
-  // Load data when tab changes - only depends on activeTab
+  // Load data when tab changes - always reload when tab becomes active
   useEffect(() => {
-    loadTabData(activeTab)
+    // Clear the loaded flag when switching tabs to ensure fresh data
+    if (activeTab === "today") {
+      loadTabData("today", true)
+    } else if (activeTab === "config") {
+      loadTabData("config", true)
+    }
   }, [activeTab, loadTabData])
 
   const handleToggleActive = useCallback(async (reminder: Reminder) => {

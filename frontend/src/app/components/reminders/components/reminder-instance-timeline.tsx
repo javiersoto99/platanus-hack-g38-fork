@@ -32,7 +32,7 @@ export function ReminderInstanceTimeline({
       <div className="absolute top-5 left-0 right-0 h-0.5 bg-gradient-to-r from-border via-border to-border" />
       
       <div className="relative flex items-start gap-3 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        {displayInstances.map((instance, index) => {
+        {displayInstances.map((instance) => {
           const statusColor = statusColors[instance.status as keyof typeof statusColors] || "bg-gray-400 border-gray-500"
           const statusBg = {
             success: "bg-green-50 dark:bg-green-950/20",

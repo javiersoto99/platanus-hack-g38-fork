@@ -13,12 +13,13 @@ interface TodayTabProps {
 }
 
 export function TodayTab({ reminderInstances, onRefresh }: TodayTabProps) {
-  const [instances, setInstances] = useState<ReminderInstance[]>(() => reminderInstances)
+  const [instances, setInstances] = useState<ReminderInstance[]>(reminderInstances)
   
   // Sync local state with props when reminderInstances changes
   useEffect(() => {
     setInstances(reminderInstances)
   }, [reminderInstances])
+  
   const [markingAll, setMarkingAll] = useState(false)
   const [markingId, setMarkingId] = useState<number | null>(null)
   const anyPending = instances.some((r) => r.status !== "success")
@@ -104,7 +105,12 @@ export function TodayTab({ reminderInstances, onRefresh }: TodayTabProps) {
         {new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}
       </h3>
       <div className="max-w-5xl mx-auto">
-        {(anyPending || allDone) ? (
+        {instances.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <p className="text-muted-foreground text-lg">No hay recordatorios para hoy</p>
+            <p className="text-muted-foreground text-sm mt-2">Los recordatorios programados para hoy aparecerán aquí</p>
+          </div>
+        ) : (anyPending || allDone) ? (
           <div className="mb-6">
             <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-6 items-start">
               <div className="flex justify-start">

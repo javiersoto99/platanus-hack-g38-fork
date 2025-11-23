@@ -46,7 +46,7 @@ export interface Reminder extends ReminderResponse {
   instances?: ReminderInstanceResponse[]
 }
 
-export interface Medicine extends MedicineResponse {}
+export type Medicine = MedicineResponse
 
 export interface ReminderInstance extends ReminderInstanceResponse {
   medicine_name?: string

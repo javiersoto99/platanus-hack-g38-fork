@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { MessageCircle, Phone, Loader2 } from "lucide-react"
@@ -24,13 +24,7 @@ export function AllInstancesModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (isOpen && reminderId) {
-      loadInstances()
-    }
-  }, [isOpen, reminderId])
-
-  const loadInstances = async () => {
+  const loadInstances = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -42,7 +36,13 @@ export function AllInstancesModal({
     } finally {
       setLoading(false)
     }
-  }
+  }, [reminderId])
+
+  useEffect(() => {
+    if (isOpen && reminderId) {
+      loadInstances()
+    }
+  }, [isOpen, reminderId, loadInstances])
 
   const statusColors = {
     success: "bg-green-500",
